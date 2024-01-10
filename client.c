@@ -19,6 +19,9 @@ void ReadSeller(char *pszSellerFile);
 void Phase_1();
 void ServerResponse_Login(char *pszServRes);
 
+void Phase_2();
+void SellerResponse_JoinRoom(char *)
+
 int iPreAucPort;
 char szPreAucIP[20];
 void chuphong()

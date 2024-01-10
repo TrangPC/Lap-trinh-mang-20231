@@ -26,7 +26,7 @@ int dem;
 void Phase_1();
 int ReadRegistrationFile(char *pszFileName);
 int AuthenticateUser(int iSock, struct MyUser* client);
-
+int ReadItemFile(char *pszFileName);
 int iWelSock;
 socklen_t client_addr_len;
 
@@ -52,7 +52,7 @@ void* client_thread(void* arg)
 
         if(strcmp(args->szUserRole, "1")==0){
             printf("Bidder Login!\n");
-            char mess[1024];
+            backToListRoom: char mess[1024];
             int imess;
             strcat(mess, "List Room: \n");
             for(int i=0;i<MAX_ROOM;i++){
@@ -73,49 +73,63 @@ void* client_thread(void* arg)
             int id_room;
             sscanf(mess,"%d", &id_room);
             
-            
+        
 
-            if(lstRooms[id_room]->numClient<MAX_CLIENT_ROOM){
+
+            //printf("seller: %s", lstRooms[id_room]->seller->szUserName);
+            //strcat(notification,lstRooms[id_room]->seller->szUserName);
+            //strcat(notification,".\n");
+
+            char* requestJoinRoom;
+            sprintf(requestJoinRoom, "%d join room. Y/N?", args->c);
+
+            send(lstRooms[id_room]->seller->c,requestJoinRoom,strlen(requestJoinRoom), 0);
+            
+            imess = recv(lstRooms[id_room]->seller->c, mess, 1024, 0);
+            if (imess<=0)
+            {
+                perror("Recv");
+                goto backToListRoom;
+            }
+            char response = mess[0];
+            if (sscanf(mess, "%c %d", &response, &port) == 2 && (response == 'N'||response == 'n'))
+            {
+                perror("Reject"); 
+            }
+            if (sscanf(mess, "%c %d", &response, &port) == 2 && (response =='Y'|| response == 'y'))
+            {
+                if(lstRooms[id_room]->numClient<MAX_CLIENT_ROOM){
                 lstRooms[id_room]->list_client[lstRooms[id_room]->numClient] = args;
                 lstRooms[id_room]->numClient++;
             }
-
-            //printf("seller: %s", lstRooms[id_room]->seller->szUserName);
-            char* notification = "Joined to room. \n";
-            //strcat(notification,lstRooms[id_room]->seller->szUserName);
-            //strcat(notification,".\n");
-            send(args->c, notification, strlen(notification), 0);
-
-            char* notification2 = "A bidder join room\n";
-            // strcat(notification, args->szUserName);
-            // strcat(notification,".\n");
-            send(lstRooms[id_room]->seller->c, notification2, strlen(notification2), 0);
-
+                char* notification = "Joined to room. \n";
+                send(port, notification, strlen(notification), 0);
+                char* notification2 = "A bidder join room\n";
+                // strcat(notification, args->szUserName);
+                // strcat(notification,".\n");
+                send(lstRooms[id_room]->seller->c, notification2, strlen(notification2), 0);
+            
             //printf("Res: %d, numcli: %d, seller: %s\n", id_room, lstRooms[id_room]->numClient,lstRooms[id_room]->seller->szUserName );
 
 
-
-            while( 0==0){
-                    printf("receive mess \n");
-                    imess = 0;
-                    imess = recv(args->c, mess, 1024, 0);
-                    if(imess<=0){
-                        perror("Recv");
-                    }
-                    send(lstRooms[id_room]->seller->c, mess, strlen(mess), 0);
-
-                    printf("Res: %d, numcli: %d\n", id_room, lstRooms[id_room]->numClient);
-                    for(int i=0;i<lstRooms[id_room]->numClient;i++){
-                        if(lstRooms[id_room]->list_client[i]->c!=args->c){
-                            send(lstRooms[id_room]->list_client[i]->c, mess, strlen(mess), 0);
+                while( 0==0){
+                        printf("receive mess \n");
+                        imess = 0;
+                        imess = recv(args->c, mess, 1024, 0);
+                        if(imess<=0){
+                            perror("Recv");
                         }
-                        
-                        //sendto(iWelSock, mess, imess, 0, (struct sockaddr*)room->list_client[i], sizeof(room->list_client[i]) );
-                    }
+                        send(lstRooms[id_room]->seller->c, mess, strlen(mess), 0);
 
-                            
+                        printf("Res: %d, numcli: %d\n", id_room, lstRooms[id_room]->numClient);
+                        for(int i=0;i<lstRooms[id_room]->numClient;i++){
+                            if(lstRooms[id_room]->list_client[i]->c!=args->c){
+                                send(lstRooms[id_room]->list_client[i]->c, mess, strlen(mess), 0);
+                            }
+                            //sendto(iWelSock, mess, imess, 0, (struct sockaddr*)room->list_client[i], sizeof(room->list_client[i]) );
+                        }       
+                }
             }
-
            
 
 
@@ -173,6 +187,11 @@ void* client_thread(void* arg)
                             if(imess<=0){
                                 perror("Recv");                                                                                                            
                             }
+                            // if (strcmp (mess, "New bidder wants to join room. Y/N?"))
+                            // {
+                            //     memset(mess,'\0',strlen(mess));
+                            //     recv(args->c, mess, 1024, 0);
+                            // }
 
 
                             printf("Res: %d, numcli: %d\n", id_room, lstRooms[id_room]->numClient);
@@ -180,9 +199,29 @@ void* client_thread(void* arg)
                                 send(lstRooms[id_room]->list_client[i]->c, mess, strlen(mess), 0);
                                 //sendto(iWelSock, mess, imess, 0, (struct sockaddr*)room->list_client[i], sizeof(room->list_client[i]) );
                             }
-
-                            
                         }
+                    // tao vat pham 
+                    // mua vat pham
+                    char *getItem = "1. Them vat pham moi\n2. Chon vat pham\n";
+                    send(args->c, getItem, strlen(getItem), 0);
+                    imess = 0;
+                    imess = recv (args->c, mess, 1024, 0);
+                    if (imess <=0)
+                        perror("Recv");
+                    char response = mess[0];
+                    if (imess == "2" && response =='1')
+                    {
+
+                    }
+                    if (item == "2" && response == '2')
+                    {
+                        // ReadItemFile("Item.txt");
+                        mess = "";
+                        sprintf(mess, )
+
+                    }
+                    
+
                     }else{
                         repeat = 0;
                         printf("Full Room\n");
@@ -198,6 +237,7 @@ void* client_thread(void* arg)
             // sscanf(buffRx,"%s %s %s", szStatus, szUserName, szUserPass);
             
         }    
+
     } else {
         char* reject = "Log in incorrectly more than 5 times!\n";
         send(args->c, reject, strlen(reject), 0);
@@ -235,7 +275,7 @@ void Phase_1()
         room->numClient = 0;
         lstRooms[i] = room;
     }
-        ReadRegistrationFile("Registration.txt");
+                    sprintf(requestJoinRoom, "%d join room. Y/N?", args->c);("Registration.txt");
         int c, bytes_recieved , true = 1;  
         char send_data [1024] , recv_data[1024];
 
@@ -508,4 +548,10 @@ int AuthenticateUser(int iSock, struct MyUser* client)
         }
         
         return 0;
+}
+
+int ReadItemFile(char *pszFileName)
+{
+    File *fp;
+    char sz
 }

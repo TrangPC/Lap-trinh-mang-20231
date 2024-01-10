@@ -34,6 +34,8 @@ extern "C" {
         char name[100];
         time_t startTime;
         time_t endTime;
+        int price;
+        int targetPrice;
         int status;
     } Item;
     
