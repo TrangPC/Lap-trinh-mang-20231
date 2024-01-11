@@ -37,8 +37,19 @@ extern "C" {
         int price;
         int targetPrice;
         int status;
+        // status = 0; chua ban con trong kho
+        // 1 : da mang di dau gia
+        // 2 : da ban
+        
     } Item;
     
+    typedef struct RoomItem{
+        int id;
+        char Seller[100];
+        char Room_ID[100];
+        int Item_ID[100];
+
+    };
     // typedef struct ItemList
     // {
     //     char szUser[20];

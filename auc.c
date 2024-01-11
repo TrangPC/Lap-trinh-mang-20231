@@ -27,6 +27,7 @@ void Phase_1();
 int ReadRegistrationFile(char *pszFileName);
 int AuthenticateUser(int iSock, struct MyUser* client);
 int ReadItemFile(char *pszFileName);
+int WriteRoomItem();
 int iWelSock;
 socklen_t client_addr_len;
 
@@ -202,22 +203,74 @@ void* client_thread(void* arg)
                         }
                     // tao vat pham 
                     // mua vat pham
-                    char *getItem = "1. Them vat pham moi\n2. Chon vat pham\n";
+
+                    B: char *getItem = "1. Them vat pham moi\n2. Chon vat pham\n";
                     send(args->c, getItem, strlen(getItem), 0);
                     imess = 0;
                     imess = recv (args->c, mess, 1024, 0);
                     if (imess <=0)
                         perror("Recv");
                     char response = mess[0];
-                    if (imess == "2" && response =='1')
+                    Item* item;
+                    if (imess == 2 && response =='1')
                     {
+                        sscanf(mess,"%d %s %ld %ld %d %d", &item->id, &item->name, &item->startTime, &item->endTime, &item->targetPrice);
+                        // luc thiet lap status khong
+                        &item->startTime = 0; 
 
+
+                        int add = WriteItemFile("Item.txt", item);
+                        mess = "Add new Item successfully.\n";
+                        reject = "Add new Item fail\n";
+                        if (add == 1) send(args->c, mess, strlen(mess), 0);
+                        else send(args->c, reject, strlen(reject),0);
                     }
-                    if (item == "2" && response == '2')
+                    if (item == 2 && response == '2')
                     {
                         // ReadItemFile("Item.txt");
                         mess = "";
-                        sprintf(mess, )
+                        char line[256];
+                        FILE *fp;
+                        fp = open("Item.txt","r");
+                        Item items[100];
+                        int itemCount = 0;
+                        if (fp == NULL) perror("Can't open file\n");
+                        while(fscanf(fp, "%s %ld %ld %d %d %d", items[itemCount].name, items[itemCount].startTime, items[itemCount].endTime, items[itemCount].price, items[itemCount].targetPrice,items[itemCount].status) ==6)
+                        {
+                            items[id].id=itemCount;
+                            sprintf(mess + strlen(mess), "ID: %d - ", items[itemCount].id);
+                            sprintf(mess + strlen(mess), "Name: %s - ", items[itemCount].name);
+                            sprintf(mess + strlen(mess), "Price: %d - ", items[itemCount].price);
+                            sprintf(mess + strlen(mess), "TargetPrice: %d - ", items[itemCount].targetPrice);
+                            sprintf(mess + strlen(mess), "Status: %d\n", items[itemCount].status);
+
+                            itemCount++;
+                        }
+                        send(args->c, mess, strlen(mess),0);
+                        C: char session = "Tao phien dau gia. Y?N";
+                        send(args->c, session, strlen(session),0);
+                        imess = recv(args->c,mess,1024,0);
+                        if (imess<=0)
+                        perror("Recv");
+                        char response = mess[0];
+                        if (imess==2&&(response=='Y'||response=='y'))
+                        {
+                            mess = "Them vat pham: ";
+                            send(args->c, mess, strnlen(mess), 0);
+                            imess = recv(args->c, mess, 1024, 0);
+                            if (imess<=0)
+                            perror("Recv");
+                            goto C;
+                            int item_id;
+                            sscanf(mess,"Id: ", item_id);
+                            WriteRoomItem();
+
+
+                        }
+                        if (imess==2&&(response=='N'||response=='n'))
+                        {
+                            goto B;
+                        }
 
                     }
                     
@@ -275,7 +328,7 @@ void Phase_1()
         room->numClient = 0;
         lstRooms[i] = room;
     }
-                    sprintf(requestJoinRoom, "%d join room. Y/N?", args->c);("Registration.txt");
+        sprintf(requestJoinRoom, "%d join room. Y/N?", args->c);("Registration.txt");
         int c, bytes_recieved , true = 1;  
         char send_data [1024] , recv_data[1024];
 
@@ -449,6 +502,44 @@ int WriteRegistrationFile(char *pszFileName)
     
     return 0;
 }
+int WriteItemFile(char *pszFileName, Item *item)
+{
+    FILE *fp;
+    // char szName[20];
+    // int szPrice;
+    // time_t szStartTime, szEndTime;
+    // int szPrice, szTargetPrice, szstatus;
+
+    fp = fopen(pszFileName, "ab");
+    if (fp == NULL) perror ("Can't open Item file\n");
+    else 
+    {
+    fwrite(item, sizeof(item), 1, fp);
+    return 1;
+    fclose(fp);
+    }
+}
+int DeleteItem(char *pszFileItem, char name)
+{
+    FILE *fp;
+        fp = fopen(pszFileName, "r+b");
+        if (fp == NULL) perror("Can't open Item file\n");
+        Item curr;
+        size_t itemSize = sizeof(Item);
+        int flag = 0;
+        while (fread(&curr, itemSize,1,fp)==1)
+            {fseek (fp, -itemSize, SEEK_CUR);
+            fwrite("",1,itemSize,fp);
+            flag = 1;
+            break;
+            return 1; 
+            }
+    if (flag == 0)
+    {
+        return 0;
+    }
+}
+
 int AuthenticateUser(int iSock, struct MyUser* client)
 {
         char buffRx[1024], buffTx[1024];
@@ -549,7 +640,9 @@ int AuthenticateUser(int iSock, struct MyUser* client)
         
         return 0;
 }
-
+WriteRoomItem(){
+    
+}
 int ReadItemFile(char *pszFileName)
 {
     File *fp;
